@@ -1,0 +1,638 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    09/28/18 14:58:34
+camera.asm						     Page 1 - 1
+
+
+				.386
+				.MODEL FLAT
+
+				ExitProcess PROTO NEAR32 stdcall, dwExitCode:DWORD
+
+				INCLUDE debug.h
+			      C INCLUDE io.h
+			      C ; IO.H -- header file for I/O macros
+			      C ; 32-bit version for flat memory model
+			      C ; R. Detmer   last revised 8/2000
+			      C .NOLIST     ; turn off listing
+			      C .LIST        ; begin listing
+			      C 
+			      C 
+ = 0000000D		      C CR          EQU    0Dh   ; carriage return character
+ = 0000000A		      C LF          EQU    0Ah   ; linefeed character
+			      C 
+ 00000000		      C .DATA
+ 00000000 0D 0A 00	      C carriage    BYTE     CR, LF, 0
+ 00000003  0000000D [	      C text        BYTE     13 DUP(?)
+	    00
+	   ]
+			      C 
+			      C outputW    	MACRO   var
+			      C                    itoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C                 ENDM
+			      C 
+			      C outputD  	MACRO  var
+			      C                    dtoa text, var
+			      C                    output text
+			      C                    output carriage
+			      C          	ENDM
+			      C 
+			      C inputW          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 8
+			      C                    atoi text
+			      C                    mov location, ax
+			      C                 ENDM
+			      C 
+			      C inputD          MACRO  prompt, location
+			      C                    output prompt
+			      C                    input text, 13
+			      C                    atod text
+			      C                    mov location, eax
+			      C                 ENDM
+			      C 
+				INCLUDE sqrt.h
+			      C .NOLIST     ; turn off listing
+			      C .LIST       
+			      C 
+
+				.STACK  4096
+
+ = s				BUFFER_SIZE EQU s
+
+ 00000010			.DATA
+
+ 00000010 0000			eyepoint_x WORD ? 
+ 00000012 0000			eyepoint_y WORD ? 
+ 00000014 0000			eyepoint_z WORD ?
+
+ 00000016 0000			lookatpoint_x WORD ? 
+ 00000018 0000			lookatpoint_y WORD ? 
+ 0000001A 0000			lookatpoint_z WORD ? 
+
+ 0000001C 0000			updirection_x WORD ? 
+ 0000001E 0000			updirection_y WORD ? 
+ 00000020 0000			updirection_z WORD ? 
+
+ 00000022 0000			dot_product_of_n_and_n WORD ?
+ 00000024 0000			dot_product_of_n_and_updirection WORD ?
+
+ 00000026 0000			n1 WORD ?
+ 00000028 0000			n2 WORD ?
+ 0000002A 0000			n3 WORD ?
+
+ 0000002C 0000			v1 WORD ?
+ 0000002E 0000			v2 WORD ?
+ 00000030 0000			v3 WORD ?
+
+ 00000032 0000			u1 WORD ?
+ 00000034 0000			u2 WORD ?
+ 00000036 0000			u3 WORD ?
+
+ 00000038 0000			new_n1 WORD ?
+ 0000003A 0000			new_n2 WORD ?
+ 0000003C 0000			new_n3 WORD ?
+
+ 0000003E 0000			new_v_up1 WORD ?
+ 00000040 0000			new_v_up2 WORD ?
+ 00000042 0000			new_v_up3 WORD ?
+
+ 00000044 0000			crossproduct_v_and_n1 WORD ?
+ 00000046 0000			crossproduct_v_and_n2 WORD ?
+ 00000048 0000			crossproduct_v_and_n3 WORD ?
+
+ 0000004A 0000			numerator_x WORD ?
+ 0000004C 0000			numerator_y WORD ?
+ 0000004E 0000			numerator_z WORD ?
+ 00000050  00000003 [		denominator WORD 3 DUP(?)
+	    0000
+	   ]
+ 00000056 0000			dot_product WORD ?
+
+
+ 00000058 45 6E 74 65 72	prompt_eyepoint_x BYTE "Enter the x-coordinate of the camera eyepoint:    " , 0 
+	   20 74 68 65 20
+	   78 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 65 79 65
+	   70 6F 69 6E 74
+	   3A 20 20 20 20
+	   00
+ 0000008B 45 6E 74 65 72	prompt_eyepoint_y BYTE "Enter the y-coordinate of the camera eyepoint:    " , 0
+	   20 74 68 65 20
+	   79 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 65 79 65
+	   70 6F 69 6E 74
+	   3A 20 20 20 20
+	   00
+ 000000BE 45 6E 74 65 72	prompt_eyepoint_z BYTE "Enter the z-coordinate of the camera eyepoint:    " , 0
+	   20 74 68 65 20
+	   7A 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 65 79 65
+	   70 6F 69 6E 74
+	   3A 20 20 20 20
+	   00
+
+ 000000F1 45 6E 74 65 72	prompt_lookatpoint_x BYTE "Enter the x-coordinate of the camera look at point:    " , 0 
+	   20 74 68 65 20
+	   78 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 6C 6F 6F
+	   6B 20 61 74 20
+	   70 6F 69 6E 74
+	   3A 20 20 20 20
+	   00
+ 00000129 45 6E 74 65 72	prompt_lookatpoint_y BYTE "Enter the y-coordinate of the camera look at point:    " , 0
+	   20 74 68 65 20
+	   79 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 6C 6F 6F
+	   6B 20 61 74 20
+	   70 6F 69 6E 74
+	   3A 20 20 20 20
+	   00
+ 00000161 45 6E 74 65 72	prompt_lookatpoint_z BYTE "Enter the z-coordinate of the camera look at point:    " , 0
+	   20 74 68 65 20
+	   7A 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 6C 6F 6F
+	   6B 20 61 74 20
+	   70 6F 69 6E 74
+	   3A 20 20 20 20
+	   00
+
+ 00000199 45 6E 74 65 72	prompt_updirection_x BYTE "Enter the x-coordinate of the camera up direction:    " , 0 
+	   20 74 68 65 20
+	   78 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 75 70 20
+	   64 69 72 65 63
+	   74 69 6F 6E 3A
+	   20 20 20 20 00
+ 000001D0 45 6E 74 65 72	prompt_updirection_y BYTE "Enter the y-coordinate of the camera up direction:    " , 0
+	   20 74 68 65 20
+	   79 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 75 70 20
+	   64 69 72 65 63
+	   74 69 6F 6E 3A
+	   20 20 20 20 00
+ 00000207 45 6E 74 65 72	prompt_updirection_z BYTE "Enter the z-coordinate of the camera up direction:    " , 0
+	   20 74 68 65 20
+	   7A 2D 63 6F 6F
+	   72 64 69 6E 61
+	   74 65 20 6F 66
+	   20 74 68 65 20
+	   63 61 6D 65 72
+	   61 20 75 70 20
+	   64 69 72 65 63
+	   74 69 6F 6E 3A
+	   20 20 20 20 00
+
+ 0000023E 6E 3A 00		prompt_n BYTE "n:", 0
+ 00000241 76 3A 00		prompt_v BYTE "v:", 0
+ 00000244 75 3A 00		prompt_u BYTE "u:", 0
+
+ 00000247  00000028 [		string     BYTE 40 DUP(?), CR, LF, 0
+	    00
+	   ] 0D 0A 00
+ 00000272  00000028 [		final_string     BYTE 40 DUP(?), CR, LF, 0
+	    00
+	   ] 0D 0A 00
+ 0000029D 0D 0A 00		new_line    BYTE     CR, LF, 0
+
+				print MACRO x, y, z
+				    
+				    mov  string, '('
+				    itoa string + 1, x
+				    mov  string + 7, ','
+				    itoa string + 8, y
+				    mov  string + 14, ','
+				    itoa string + 15, z
+				    mov  string + 21, ')' 
+				    output  string
+				    output  new_line
+				    output  new_line
+				    ENDM
+
+				calculate_dot_product MACRO a_x, a_y, a_z, b_x, b_y, b_z, memory_location
+				  
+				    mov ax , a_x
+				    imul b_x
+				    add memory_location, ax
+				    ;outputW dot_product
+				    ;output  new_line
+
+				    mov ax , a_y
+				    imul b_y
+				    add  memory_location, ax
+				    ;outputW dot_product
+				    ;output  new_line
+
+				    mov ax , a_z
+				    imul b_z
+				    add  memory_location, ax
+				    ;outputW dot_product
+				    ;output  new_line
+				    ENDM
+
+
+				print_final_cordinate MACRO x, y, z
+				    
+				    mov  dot_product , 0
+				    calculate_dot_product x, y, z, x, y, z, dot_product
+
+				    ;outputW dot_product
+
+				    mov ax , dot_product
+				    sqrt ax
+				    mov denominator , ax
+
+				    ;outputW denominator
+
+				    output  new_line   
+				    itoa final_string + 5, denominator
+				    mov  final_string, '('
+				    itoa final_string + 1, x
+				    mov  final_string + 7, '/'
+				    mov  final_string + 11, ','
+
+				    itoa final_string + 16, denominator
+				    itoa final_string + 12, y
+				    mov  final_string + 18, '/'
+				    mov  final_string + 22, ','
+
+				    itoa final_string + 27, denominator
+				    itoa final_string + 23, z
+				    mov  final_string + 29, '/'
+				    mov  final_string + 33, ')' 
+
+				    output  final_string
+				    output  new_line
+				    ENDM
+
+ 00000000			.CODE
+ 00000000			_start:
+ 00000000			        ;EYEPOINT
+				        ;x-coordinate_eyepoint
+				        inputW prompt_eyepoint_x, eyepoint_x ; get input, convert the ASCII to a WORD, place result in ax (ah has no meaningful data)
+				        outputW eyepoint_x
+				        ;y-coordinate_eyepoint
+				        inputW prompt_eyepoint_y, eyepoint_y
+				        outputW eyepoint_y    
+				        ;z-coordinate_eyepoint
+				        inputW prompt_eyepoint_z, eyepoint_z
+				        outputW eyepoint_z
+
+				        ;print eyepoint cordinates
+				        print eyepoint_x, eyepoint_y, eyepoint_z
+
+				        ;LOOKatPOINT
+				        ;x-coordinate_lookatpoint
+				        inputW prompt_lookatpoint_x, lookatpoint_x
+				        outputW lookatpoint_x
+				        ;y-coordinate_lookatpoint
+				        inputW prompt_lookatpoint_y, lookatpoint_y
+				        outputW lookatpoint_y
+				        ;z-coordinate_lookatpoint
+				        inputW prompt_lookatpoint_z, lookatpoint_z
+				        outputW lookatpoint_z 
+				        ;print lookatpoint cordinates
+				        print lookatpoint_x, lookatpoint_y, lookatpoint_z
+
+
+				        ;UPDIRECTION
+				        ;x-coordinate_updirection
+				        inputW prompt_updirection_x, updirection_x
+				        outputW updirection_x
+				        ;y-coordinate_lookatpoint
+				        inputW prompt_updirection_y, updirection_y
+				        outputW updirection_y
+				        ;z-coordinate_lookatpoint
+				        inputW prompt_updirection_z, updirection_z
+				        outputW updirection_z 
+				        ;print updirection cordinates
+				        print updirection_x, updirection_y, updirection_z
+				        
+
+				        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				        ;calculation part
+				        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+				        ;n
+				        ;Subtract the at point from the eye point (E - A) coordinate 
+ 00000552  66| A1		        mov ax , eyepoint_x
+	   00000010 R
+ 00000558  66| 2B 05		        sub ax , lookatpoint_x
+	   00000016 R
+ 0000055F  66| A3		        mov n1 , ax
+	   00000026 R
+				        ;outputW n1
+
+ 00000565  66| A1		        mov ax , eyepoint_y
+	   00000012 R
+ 0000056B  66| 2B 05		        sub ax , lookatpoint_y
+	   00000018 R
+ 00000572  66| A3		        mov n2 , ax
+	   00000028 R
+				        ;outputW n2    
+
+ 00000578  66| A1		        mov ax , eyepoint_z
+	   00000014 R
+ 0000057E  66| 2B 05		        sub ax , lookatpoint_z
+	   0000001A R
+ 00000585  66| A3		        mov n3 , ax
+	   0000002A R
+				        ;outputW n3 
+
+				        
+
+				        ;outputW dot_product_of_n_and_n
+
+				        ;v
+				        ;v = -(v_up.n)n + (n.n)v_up
+				        calculate_dot_product n1, n2, n3, updirection_x, updirection_y, updirection_z, dot_product_of_n_and_updirection
+				        calculate_dot_product n1, n2, n3, n1, n2, n3, dot_product_of_n_and_n
+				        ;mov ax , -1
+				        ;imul dot_product_of_n_and_updirection
+ 00000603  66| F7 1D		        neg dot_product_of_n_and_updirection
+	   00000024 R
+				        ;mov dot_product_of_n_and_updirection , ax
+
+				        ;outputW dot_product_of_n_and_updirection
+
+ 0000060A  66| A1		        mov ax , n1
+	   00000026 R
+ 00000610  66| F7 2D		        imul dot_product_of_n_and_updirection
+	   00000024 R
+ 00000617  66| A3		        mov new_n1 , ax
+	   00000038 R
+
+ 0000061D  66| A1		        mov ax , n2
+	   00000028 R
+ 00000623  66| F7 2D		        imul dot_product_of_n_and_updirection
+	   00000024 R
+ 0000062A  66| A3		        mov new_n2 , ax
+	   0000003A R
+
+ 00000630  66| A1		        mov ax , n3
+	   0000002A R
+ 00000636  66| F7 2D		        imul dot_product_of_n_and_updirection
+	   00000024 R
+ 0000063D  66| A3		        mov new_n3 , ax
+	   0000003C R
+
+ 00000643  66| A1		        mov ax , updirection_x
+	   0000001C R
+ 00000649  66| F7 2D		        imul dot_product_of_n_and_n
+	   00000022 R
+ 00000650  66| A3		        mov new_v_up1 , ax
+	   0000003E R
+
+ 00000656  66| A1		        mov ax , updirection_y
+	   0000001E R
+ 0000065C  66| F7 2D		        imul dot_product_of_n_and_n
+	   00000022 R
+ 00000663  66| A3		        mov new_v_up2 , ax
+	   00000040 R
+
+ 00000669  66| A1		        mov ax , updirection_z
+	   00000020 R
+ 0000066F  66| F7 2D		        imul dot_product_of_n_and_n
+	   00000022 R
+ 00000676  66| A3		        mov new_v_up3 , ax
+	   00000042 R
+
+ 0000067C  66| A1		        mov ax , new_n1
+	   00000038 R
+ 00000682  66| 03 05		        add ax , new_v_up1
+	   0000003E R
+ 00000689  66| A3		        mov v1 , ax
+	   0000002C R
+
+ 0000068F  66| A1		        mov ax , new_n2
+	   0000003A R
+ 00000695  66| 03 05		        add ax , new_v_up2
+	   00000040 R
+ 0000069C  66| A3		        mov v2 , ax
+	   0000002E R
+
+ 000006A2  66| A1		        mov ax , new_n3
+	   0000003C R
+ 000006A8  66| 03 05		        add ax , new_v_up3
+	   00000042 R
+ 000006AF  66| A3		        mov v3 , ax
+	   00000030 R
+
+				        ;u
+				        ;a x b (a cross b) = 
+				        ;a_y*b_z - a_z*b_y (the first component of a x b)
+				        ;a_z*b_x - a_x*b_z (the second component of a x b)
+				        ;a_x*b_y - a_y*b_x (the third component of a x b)
+
+				        ;v x n
+				        ;v x n (v cross n) = 
+				        ;v2*n3 - v3*n2 (the first component of a x b)
+				        ;v3*n1 - v1*n3 (the second component of a x b)
+				        ;v1*n2 - v2*n1 (the third component of a x b)
+
+ 000006B5  66| A1		        mov ax , v2
+	   0000002E R
+ 000006BB  66| F7 2D		        imul n3
+	   0000002A R
+ 000006C2  66| A3		        mov u1 , ax
+	   00000032 R
+ 000006C8  66| A1		        mov ax , v3
+	   00000030 R
+ 000006CE  66| F7 2D		        imul n2
+	   00000028 R
+ 000006D5  66| 29 05		        sub u1 , ax
+	   00000032 R
+
+ 000006DC  66| A1		        mov ax , v3
+	   00000030 R
+ 000006E2  66| F7 2D		        imul n1
+	   00000026 R
+ 000006E9  66| A3		        mov u2 , ax
+	   00000034 R
+ 000006EF  66| A1		        mov ax , v1
+	   0000002C R
+ 000006F5  66| F7 2D		        imul n3
+	   0000002A R
+ 000006FC  66| 29 05		        sub u2 , ax
+	   00000034 R
+
+ 00000703  66| A1		        mov ax , v1
+	   0000002C R
+ 00000709  66| F7 2D		        imul n2
+	   00000028 R
+ 00000710  66| A3		        mov u3 , ax
+	   00000036 R
+ 00000716  66| A1		        mov ax , v2
+	   0000002E R
+ 0000071C  66| F7 2D		        imul n1
+	   00000026 R
+ 00000723  66| 29 05		        sub u3 , ax
+	   00000036 R
+
+				        output prompt_u
+				        print_final_cordinate u1, u2, u3
+
+				        output prompt_v
+				        print_final_cordinate v1, v2, v3
+
+				        output prompt_n
+				        print_final_cordinate n1, n2, n3
+				    
+				        INVOKE  ExitProcess, 0
+
+ 00000B12			PUBLIC _start
+				END
+Microsoft (R) Macro Assembler Version 6.15.8803		    09/28/18 14:58:34
+camera.asm						     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+atod . . . . . . . . . . . . . .	Proc
+atoi . . . . . . . . . . . . . .	Proc
+calculate_dot_product  . . . . .	Proc
+dtoa . . . . . . . . . . . . . .	Proc
+inputD . . . . . . . . . . . . .	Proc
+inputW . . . . . . . . . . . . .	Proc
+input  . . . . . . . . . . . . .	Proc
+itoa . . . . . . . . . . . . . .	Proc
+outputD  . . . . . . . . . . . .	Proc
+outputW  . . . . . . . . . . . .	Proc
+output . . . . . . . . . . . . .	Proc
+print_final_cordinate  . . . . .	Proc
+print  . . . . . . . . . . . . .	Proc
+sqrt . . . . . . . . . . . . . .	Proc
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 DWord	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 000002A0 DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000B12 DWord	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+$$$00001 . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000B12 Private
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000000h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+BUFFER_SIZE  . . . . . . . . . .	Text   	 s
+CR . . . . . . . . . . . . . . .	Number	 0000000Dh   
+LF . . . . . . . . . . . . . . .	Number	 0000000Ah   
+_start . . . . . . . . . . . . .	L Near	 00000000 _TEXT	Public
+atodproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+atoiproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+carriage . . . . . . . . . . . .	Byte	 00000000 _DATA	
+crossproduct_v_and_n1  . . . . .	Word	 00000044 _DATA	
+crossproduct_v_and_n2  . . . . .	Word	 00000046 _DATA	
+crossproduct_v_and_n3  . . . . .	Word	 00000048 _DATA	
+denominator  . . . . . . . . . .	Word	 00000050 _DATA	
+dot_product_of_n_and_n . . . . .	Word	 00000022 _DATA	
+dot_product_of_n_and_updirection .	Word	 00000024 _DATA	
+dot_product  . . . . . . . . . .	Word	 00000056 _DATA	
+dtoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+eyepoint_x . . . . . . . . . . .	Word	 00000010 _DATA	
+eyepoint_y . . . . . . . . . . .	Word	 00000012 _DATA	
+eyepoint_z . . . . . . . . . . .	Word	 00000014 _DATA	
+final_string . . . . . . . . . .	Byte	 00000272 _DATA	
+inproc . . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+itoaproc . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+lookatpoint_x  . . . . . . . . .	Word	 00000016 _DATA	
+lookatpoint_y  . . . . . . . . .	Word	 00000018 _DATA	
+lookatpoint_z  . . . . . . . . .	Word	 0000001A _DATA	
+n1 . . . . . . . . . . . . . . .	Word	 00000026 _DATA	
+n2 . . . . . . . . . . . . . . .	Word	 00000028 _DATA	
+n3 . . . . . . . . . . . . . . .	Word	 0000002A _DATA	
+new_line . . . . . . . . . . . .	Byte	 0000029D _DATA	
+new_n1 . . . . . . . . . . . . .	Word	 00000038 _DATA	
+new_n2 . . . . . . . . . . . . .	Word	 0000003A _DATA	
+new_n3 . . . . . . . . . . . . .	Word	 0000003C _DATA	
+new_v_up1  . . . . . . . . . . .	Word	 0000003E _DATA	
+new_v_up2  . . . . . . . . . . .	Word	 00000040 _DATA	
+new_v_up3  . . . . . . . . . . .	Word	 00000042 _DATA	
+numerator_x  . . . . . . . . . .	Word	 0000004A _DATA	
+numerator_y  . . . . . . . . . .	Word	 0000004C _DATA	
+numerator_z  . . . . . . . . . .	Word	 0000004E _DATA	
+outproc  . . . . . . . . . . . .	L Near	 00000000 FLAT	External
+prompt_eyepoint_x  . . . . . . .	Byte	 00000058 _DATA	
+prompt_eyepoint_y  . . . . . . .	Byte	 0000008B _DATA	
+prompt_eyepoint_z  . . . . . . .	Byte	 000000BE _DATA	
+prompt_lookatpoint_x . . . . . .	Byte	 000000F1 _DATA	
+prompt_lookatpoint_y . . . . . .	Byte	 00000129 _DATA	
+prompt_lookatpoint_z . . . . . .	Byte	 00000161 _DATA	
+prompt_n . . . . . . . . . . . .	Byte	 0000023E _DATA	
+prompt_updirection_x . . . . . .	Byte	 00000199 _DATA	
+prompt_updirection_y . . . . . .	Byte	 000001D0 _DATA	
+prompt_updirection_z . . . . . .	Byte	 00000207 _DATA	
+prompt_u . . . . . . . . . . . .	Byte	 00000244 _DATA	
+prompt_v . . . . . . . . . . . .	Byte	 00000241 _DATA	
+sqrt_proc  . . . . . . . . . . .	L Near	 00000000 FLAT	External
+string . . . . . . . . . . . . .	Byte	 00000247 _DATA	
+text . . . . . . . . . . . . . .	Byte	 00000003 _DATA	
+u1 . . . . . . . . . . . . . . .	Word	 00000032 _DATA	
+u2 . . . . . . . . . . . . . . .	Word	 00000034 _DATA	
+u3 . . . . . . . . . . . . . . .	Word	 00000036 _DATA	
+updirection_x  . . . . . . . . .	Word	 0000001C _DATA	
+updirection_y  . . . . . . . . .	Word	 0000001E _DATA	
+updirection_z  . . . . . . . . .	Word	 00000020 _DATA	
+v1 . . . . . . . . . . . . . . .	Word	 0000002C _DATA	
+v2 . . . . . . . . . . . . . . .	Word	 0000002E _DATA	
+v3 . . . . . . . . . . . . . . .	Word	 00000030 _DATA	
+
+	   0 Warnings
+	   0 Errors
